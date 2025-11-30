@@ -7,6 +7,18 @@ token = os.getenv("TOKEN")
 
 bot = telebot.TeleBot(token)
 
+def send_xml(file):
+    print("загрузка")
+
+
+def save_xml(file):
+    file_info = bot.get_file(file.file_id)
+    download = bot.download_file(file_info.file_path)
+    path = "downloaded_xml"
+
+    with open(path, 'wb') as f:
+        f.write(download)
+
 
 @bot.message_handler(commands=['start'])
 def start_proceed(message):
@@ -66,4 +78,16 @@ def project_about_proceed(call):
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=message_text, reply_markup=kb)
 
 
+@bot.message_handler(content_types=['document'])
+def handle_document(message):
+    file_name = message.document.file_name.lower()
+
+    if file_name.endswith('.fbt'):
+        bot.send_message(message.chat.id, "Обработка файла...")
+        save_xml(message.document)
+    else:
+        bot.send_message(message.chat.id, "Файл неверного формата\nПришлите файл с расширением .fbt")
+
+
+print("Бот запущен...")
 bot.infinity_polling()

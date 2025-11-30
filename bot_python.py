@@ -8,9 +8,6 @@ token = os.getenv("TOKEN")
 bot = telebot.TeleBot(token)
 
 
-
-
-
 @bot.message_handler(commands=['start'])
 def start_proceed(message):
     user_id = message.chat.id
@@ -24,27 +21,32 @@ def start_proceed(message):
     bot.send_message(user_id, message_text, reply_markup=kb)
 
 
-@bot.callback_query_handler(func=lambda call: call.data == "main")
+@bot.callback_query_handler(func=lambda call: call.data == "load_xml")
 def load_xml_proceed(call):
     user_id = call.message.chat.id
-
     message_text = "Пришли XML файл с данными функционального блока:"
     bot.send_message(user_id, message_text)
 
 
-@bot.callback_query_handler(func=lambda call: call.data == "main")
+@bot.callback_query_handler(func=lambda call: call.data == "help")
 def load_xml_proceed(call):
     user_id = call.message.chat.id
+    message_text = '''Инструкция по использованию бота:
+1. В главном меню бота нажать на кнопку "Загрузить XML"
+2. После ответа бота загрузить XML файл функционального блока IEC-61499
+3. Дождаться генерации файла. Бот представит на выбоор 2 варианта: PNG и SVG
 
-    message_text = "Пришли XML файл с данными функционального блока:"
+По любым вопросам: @aToTheStars'''
     bot.send_message(user_id, message_text)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == "project_about")
 def load_xml_proceed(call):
     user_id = call.message.chat.id
-
-    message_text = "Пришли XML файл с данными функционального блока:"
+    message_text = '''Бот выполнен в рамках курсовой работы для генерации подробного изображения принципиальной схемы функционального блока IEC-61499 на основе его XML файла.
+Разработчики:
+@aToTheStars
+@MangoWkusnoe'''
     bot.send_message(user_id, message_text)
 
 

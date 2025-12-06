@@ -1,22 +1,66 @@
 cmake_minimum_required(VERSION 3.15)
-project(bot_preview LANGUAGES CXX)
+project(iec61499_bot LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(bot_preview bot_preview.cpp)
+find_package(PkgConfig REQUIRED)
 
-# Try the CMake package first; fall back to pkg-config if it is not available.
+# --- TgBot ---
 find_package(TgBot QUIET)
-if(TgBot_FOUND)
-    target_link_libraries(bot_preview PRIVATE TgBot::TgBot)
-else()
-    find_package(PkgConfig REQUIRED)
+if(NOT TgBot_FOUND)
     pkg_check_modules(TGBOT REQUIRED tgbot)
-    target_include_directories(bot_preview PRIVATE ${TGBOT_INCLUDE_DIRS})
-    target_link_libraries(bot_preview PRIVATE ${TGBOT_LIBRARIES})
 endif()
 
-# TgBot headers depend on Boost.PropertyTree; make sure Boost include dirs are visible.
+# --- Cairo + librsvg for PNGRenderer ---
+pkg_check_modules(CAIRO REQUIRED cairo)
+pkg_check_modules(RSVG REQUIRED librsvg-2.0)
+
+# --- Boost (headers are needed by TgBot) ---
 find_package(Boost REQUIRED)
-target_include_directories(bot_preview PRIVATE ${Boost_INCLUDE_DIRS})
+
+# --- fbsvg library (parser + renderers + pugixml) ---
+add_library(fbsvg STATIC
+    src/fb_parser.cpp
+    src/svg_renderer.cpp
+    src/png_renderer.cpp
+    pugixml/pugixml.cpp
+)
+target_include_directories(fbsvg
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/fbsvg
+        ${CMAKE_SOURCE_DIR}/pugixml
+        ${CAIRO_INCLUDE_DIRS}
+        ${RSVG_INCLUDE_DIRS}
+)
+target_link_directories(fbsvg
+    PUBLIC
+        ${CAIRO_LIBRARY_DIRS}
+        ${RSVG_LIBRARY_DIRS}
+)
+target_link_libraries(fbsvg
+    PUBLIC
+        ${CAIRO_LIBRARIES}
+        ${RSVG_LIBRARIES}
+)
+
+# --- Bot executable ---
+add_executable(bot
+    src/bot.cpp
+)
+
+target_include_directories(bot
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/fbsvg
+        ${CMAKE_SOURCE_DIR}
+        ${Boost_INCLUDE_DIRS}
+)
+
+if(TgBot_FOUND)
+    target_link_libraries(bot PRIVATE TgBot::TgBot)
+else()
+    target_include_directories(bot PRIVATE ${TGBOT_INCLUDE_DIRS})
+    target_link_libraries(bot PRIVATE ${TGBOT_LIBRARIES})
+endif()
+
+target_link_libraries(bot PRIVATE fbsvg)

@@ -6,20 +6,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(PkgConfig REQUIRED)
 
-# --- TgBot ---
 find_package(TgBot QUIET)
 if(NOT TgBot_FOUND)
     pkg_check_modules(TGBOT REQUIRED tgbot)
 endif()
 
-# --- Cairo + librsvg for PNGRenderer ---
 pkg_check_modules(CAIRO REQUIRED cairo)
 pkg_check_modules(RSVG REQUIRED librsvg-2.0)
 
-# --- Boost (headers are needed by TgBot) ---
 find_package(Boost REQUIRED)
 
-# --- fbsvg library (parser + renderers + pugixml) ---
 add_library(fbsvg STATIC
     src/fb_parser.cpp
     src/svg_renderer.cpp
@@ -44,7 +40,6 @@ target_link_libraries(fbsvg
         ${RSVG_LIBRARIES}
 )
 
-# --- Bot executable ---
 add_executable(bot
     src/bot.cpp
 )

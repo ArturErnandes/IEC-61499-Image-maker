@@ -1,10 +1,11 @@
+//Код бота, который принимает .fbt файлы с параметрами блока IEC-61499 и возвращает сгенерированные png и svg 
 #include <tgbot/tgbot.h>
 
-#include <cstdlib>      // getenv
-#include <fstream>      // ofstream
-#include <cctype>       // tolower
+#include <cstdlib> 
+#include <fstream>    
+#include <cctype>   
 #include <iostream>
-#include <filesystem>   // exists
+#include <filesystem>   
 #include <chrono>
 #include <sstream>
 #include <string_view>
@@ -13,9 +14,7 @@
 #include "svg_renderer.hpp"
 #include "png_renderer.hpp"
 
-// ------------------ Вспомогательные функции ------------------
 
-// Главное меню
 void sendMainMenu(TgBot::Bot& bot, int64_t chatId) {
     std::string messageText =
         "Привет!\n"
@@ -54,8 +53,8 @@ void sendMainMenu(TgBot::Bot& bot, int64_t chatId) {
     bot.getApi().sendMessage(
         chatId,
         messageText,
-        nullptr,              // linkPreviewOptions
-        nullptr,              // replyParameters
+        nullptr,             
+        nullptr,          
         keyboard,
         "Markdown"
     );
@@ -87,13 +86,11 @@ void sendResults(TgBot::Bot& bot, const std::string& pngPath, const std::string&
     sendMainMenu(bot, chatId);
 }
 
-// Генерация SVG/PNG по XML и отправка пользователю
 void generateTrigger(TgBot::Bot& bot, const std::string& xmlPath, const std::string& baseName, int64_t chatId) {
     try {
         fbsvg::FBModel model = fbsvg::FBParser::parse_from_file(xmlPath);
         std::string svgContent = fbsvg::SVGRenderer::render(model);
 
-        // Имена совпадают с исходным файлом (.fbt -> .svg/.png)
         ensureImagesDir();
         std::filesystem::path svgPath = std::filesystem::path("images") / (baseName + ".svg");
         std::filesystem::path pngPath = std::filesystem::path("images") / (baseName + ".png");
@@ -112,7 +109,6 @@ void generateTrigger(TgBot::Bot& bot, const std::string& xmlPath, const std::str
     }
 }
 
-// Сохранение XML, полученного от пользователя
 void saveXml(TgBot::Bot& bot, TgBot::Message::Ptr message) {
     if (!message->document) {
         return;
@@ -122,7 +118,6 @@ void saveXml(TgBot::Bot& bot, TgBot::Message::Ptr message) {
 
     TgBot::File::Ptr fileInfo = bot.getApi().getFile(message->document->fileId);
 
-    // Базовое имя без директорий и без расширения
     ensureImagesDir();
 
     std::filesystem::path originalName = std::filesystem::path(message->document->fileName).filename();
@@ -131,7 +126,6 @@ void saveXml(TgBot::Bot& bot, TgBot::Message::Ptr message) {
         stem = "fb";
     }
 
-    // Сохраняем входной файл в images/ с оригинальным именем
     std::filesystem::path localPath = std::filesystem::path("images") / (stem + ".fbt");
 
     const std::string content = bot.getApi().downloadFile(fileInfo->filePath);
@@ -146,7 +140,6 @@ void saveXml(TgBot::Bot& bot, TgBot::Message::Ptr message) {
     generateTrigger(bot, localPath.string(), stem, chatId);
 }
 
-// ------------------ main ------------------
 
 int main() {
     const char* tokenEnv = std::getenv("TOKEN");
@@ -157,12 +150,10 @@ int main() {
 
     TgBot::Bot bot(tokenEnv);
 
-    // /start
     bot.getEvents().onCommand("start", [&bot](TgBot::Message::Ptr message) {
         sendMainMenu(bot, message->chat->id);
     });
 
-    // Кнопки
     bot.getEvents().onCallbackQuery([&bot](TgBot::CallbackQuery::Ptr query) {
         bot.getApi().answerCallbackQuery(query->id);
 
@@ -218,7 +209,7 @@ int main() {
         }
     });
 
-    // Приём XML файлов
+
     bot.getEvents().onAnyMessage([&bot](TgBot::Message::Ptr message) {
         if (!message->document) {
             return;
@@ -227,13 +218,11 @@ int main() {
         int64_t chatId = message->chat->id;
         std::string fileName = message->document->fileName;
 
-        // Перевод в lowercase вручную
         std::string lower = fileName;
         for (char& c : lower) {
             c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
         }
 
-        // Проверка расширения
         bool isFbt = false;
         if (lower.size() >= 4 && lower.substr(lower.size() - 4) == ".fbt") {
             isFbt = true;
@@ -247,7 +236,7 @@ int main() {
         }
     });
 
-    // Запуск
+
     std::cout << "Бот запущен..." << std::endl;
 
     try {

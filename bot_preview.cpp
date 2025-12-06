@@ -1,9 +1,10 @@
 #include <tgbot/tgbot.h>
 
-#include <cstdlib>    // getenv
-#include <fstream>    // ofstream
-#include <cctype>     // tolower
+#include <cstdlib>      // getenv
+#include <fstream>      // ofstream
+#include <cctype>       // tolower
 #include <iostream>
+#include <filesystem>   // exists
 
 // ------------------ Вспомогательные функции ------------------
 
@@ -43,17 +44,30 @@ void sendMainMenu(TgBot::Bot& bot, int64_t chatId) {
         keyboard->inlineKeyboard.push_back(row);
     }
 
-    bot.getApi().sendMessage(chatId, messageText, false, 0, keyboard, "Markdown");
+    bot.getApi().sendMessage(
+        chatId,
+        messageText,
+        nullptr,              // linkPreviewOptions
+        nullptr,              // replyParameters
+        keyboard,
+        "Markdown"
+    );
 }
 
 // Отправка готового результата
 void sendXml(TgBot::Bot& bot, const std::string& filePath, int64_t chatId) {
+    if (!std::filesystem::exists(filePath)) {
+        bot.getApi().sendMessage(chatId, "Ошибка: файл результата не найден.");
+        sendMainMenu(bot, chatId);
+        return;
+    }
+
     TgBot::InputFile::Ptr doc = TgBot::InputFile::fromFile(filePath, "application/octet-stream");
     bot.getApi().sendDocument(chatId, doc);
 
-    bot.getApi().sendMessage(
-        chatId,
-        "Готово, вот финальные файлы принципиальной схемы функционального блока IEC-61499"
+    bot.getApi().sendMessage(chatId,
+        "Готово, вот финальные файлы принципиальной схемы функционального блока IEC-61499",
+        nullptr, nullptr, nullptr, ""
     );
 
     sendMainMenu(bot, chatId);
@@ -78,15 +92,15 @@ void saveXml(TgBot::Bot& bot, TgBot::Message::Ptr message) {
 
     TgBot::File::Ptr fileInfo = bot.getApi().getFile(message->document->fileId);
 
-    std::string localPath = "downloaded_xml.fbt";
+    std::string localPath = "downloaded_" + std::to_string(chatId) + "_" + fileInfo->fileId + ".fbt";
 
+    const std::string content = bot.getApi().downloadFile(fileInfo->filePath);
     std::ofstream ofs(localPath, std::ios::binary);
     if (!ofs.is_open()) {
         bot.getApi().sendMessage(chatId, "Ошибка: не удалось сохранить файл.");
         return;
     }
-
-    bot.getApi().downloadFile(fileInfo->filePath, ofs);
+    ofs.write(content.data(), static_cast<std::streamsize>(content.size()));
     ofs.close();
 
     generateTrigger(bot, localPath, chatId);
@@ -110,6 +124,8 @@ int main() {
 
     // Кнопки
     bot.getEvents().onCallbackQuery([&bot](TgBot::CallbackQuery::Ptr query) {
+        bot.getApi().answerCallbackQuery(query->id);
+
         int64_t chatId = query->message->chat->id;
         const std::string& data = query->data;
 
@@ -123,7 +139,11 @@ int main() {
             btn->callbackData = "back_to_main";
             kb->inlineKeyboard.push_back({btn});
 
-            bot.getApi().sendMessage(chatId, "Пришли XML файл функционального блока:", false, 0, kb);
+            bot.getApi().sendMessage(
+                chatId,
+                "Пришли XML файл функционального блока:",
+                nullptr, nullptr, kb
+            );
         }
         else if (data == "help") {
             TgBot::InlineKeyboardMarkup::Ptr kb(new TgBot::InlineKeyboardMarkup);
@@ -132,14 +152,13 @@ int main() {
             btn->callbackData = "back_to_main";
             kb->inlineKeyboard.push_back({btn});
 
-            bot.getApi().sendMessage(
-                chatId,
+            bot.getApi().sendMessage(chatId,
                 "Инструкция:\n"
                 "1. Нажмите \"Загрузить XML\"\n"
                 "2. Отправьте XML файл (.fbt)\n"
                 "3. Дождитесь генерации PNG и SVG\n\n"
                 "По вопросам: @aToTheStars",
-                false, 0, kb
+                nullptr, nullptr, kb
             );
         }
         else if (data == "project_about") {
@@ -149,13 +168,12 @@ int main() {
             btn->callbackData = "back_to_main";
             kb->inlineKeyboard.push_back({btn});
 
-            bot.getApi().sendMessage(
-                chatId,
+            bot.getApi().sendMessage(chatId,
                 "Бот создан в рамках курсовой работы.\n"
                 "Разработчики:\n"
                 "@aToTheStars\n"
                 "@MangoWkusnoe",
-                false, 0, kb
+                nullptr, nullptr, kb
             );
         }
     });

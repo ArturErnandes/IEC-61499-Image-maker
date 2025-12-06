@@ -2,3 +2,5 @@
 .venv/
 result.png
 downloaded_xml
+project_root/
+build/

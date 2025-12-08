@@ -5,9 +5,7 @@
 #include <cctype>   
 #include <iostream>
 #include <filesystem>   
-#include <chrono>
-#include <sstream>
-#include <string_view>
+#include <functional>
 
 #include <fbsvg/fb_parser.hpp>
 #include <fbsvg/svg_renderer.hpp>
@@ -139,6 +137,91 @@ void saveXml(TgBot::Bot& bot, TgBot::Message::Ptr message) {
     generateTrigger(bot, localPath.string(), stem, chatId);
 }
 
+void handleStartCommand(TgBot::Bot& bot, TgBot::Message::Ptr message) {
+    sendMainMenu(bot, message->chat->id);
+}
+
+void handleCallbackQuery(TgBot::Bot& bot, TgBot::CallbackQuery::Ptr query) {
+    bot.getApi().answerCallbackQuery(query->id);
+
+    int64_t chatId = query->message->chat->id;
+    const std::string& data = query->data;
+
+    if (data == "back_to_main") {
+        sendMainMenu(bot, chatId);
+    }
+    else if (data == "load_xml") {
+        TgBot::InlineKeyboardMarkup::Ptr kb(new TgBot::InlineKeyboardMarkup);
+        TgBot::InlineKeyboardButton::Ptr btn(new TgBot::InlineKeyboardButton);
+        btn->text = "Отмена";
+        btn->callbackData = "back_to_main";
+        kb->inlineKeyboard.push_back({btn});
+
+        bot.getApi().sendMessage(
+            chatId,
+            "Пришли XML файл функционального блока:",
+            nullptr, nullptr, kb
+        );
+    }
+    else if (data == "help") {
+        TgBot::InlineKeyboardMarkup::Ptr kb(new TgBot::InlineKeyboardMarkup);
+        TgBot::InlineKeyboardButton::Ptr btn(new TgBot::InlineKeyboardButton);
+        btn->text = "Назад";
+        btn->callbackData = "back_to_main";
+        kb->inlineKeyboard.push_back({btn});
+
+        bot.getApi().sendMessage(chatId,
+            "Инструкция:\n"
+            "1. Нажмите \"Загрузить XML\"\n"
+            "2. Отправьте XML файл (.fbt)\n"
+            "3. Дождитесь генерации PNG и SVG\n\n"
+            "По вопросам: @aToTheStars",
+            nullptr, nullptr, kb
+        );
+    }
+    else if (data == "project_about") {
+        TgBot::InlineKeyboardMarkup::Ptr kb(new TgBot::InlineKeyboardMarkup);
+        TgBot::InlineKeyboardButton::Ptr btn(new TgBot::InlineKeyboardButton);
+        btn->text = "Назад";
+        btn->callbackData = "back_to_main";
+        kb->inlineKeyboard.push_back({btn});
+
+        bot.getApi().sendMessage(chatId,
+            "Бот создан в рамках курсовой работы.\n"
+            "Разработчики:\n"
+            "@aToTheStars\n"
+            "@MangoWkusnoe",
+            nullptr, nullptr, kb
+        );
+    }
+}
+
+void handleAnyMessage(TgBot::Bot& bot, TgBot::Message::Ptr message) {
+    if (!message->document) {
+        return;
+    }
+
+    int64_t chatId = message->chat->id;
+    std::string fileName = message->document->fileName;
+
+    std::string lower = fileName;
+    for (char& c : lower) {
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    }
+
+    bool isFbt = false;
+    if (lower.size() >= 4 && lower.substr(lower.size() - 4) == ".fbt") {
+        isFbt = true;
+    }
+
+    if (isFbt) {
+        bot.getApi().sendMessage(chatId, "Обработка файла...");
+        saveXml(bot, message);
+    } else {
+        bot.getApi().sendMessage(chatId, "Неверный формат файла. Пришлите файл .fbt");
+    }
+}
+
 
 int main() {
     const char* tokenEnv = std::getenv("TOKEN");
@@ -149,91 +232,10 @@ int main() {
 
     TgBot::Bot bot(tokenEnv);
 
-    bot.getEvents().onCommand("start", [&bot](TgBot::Message::Ptr message) {
-        sendMainMenu(bot, message->chat->id);
-    });
-
-    bot.getEvents().onCallbackQuery([&bot](TgBot::CallbackQuery::Ptr query) {
-        bot.getApi().answerCallbackQuery(query->id);
-
-        int64_t chatId = query->message->chat->id;
-        const std::string& data = query->data;
-
-        if (data == "back_to_main") {
-            sendMainMenu(bot, chatId);
-        }
-        else if (data == "load_xml") {
-            TgBot::InlineKeyboardMarkup::Ptr kb(new TgBot::InlineKeyboardMarkup);
-            TgBot::InlineKeyboardButton::Ptr btn(new TgBot::InlineKeyboardButton);
-            btn->text = "Отмена";
-            btn->callbackData = "back_to_main";
-            kb->inlineKeyboard.push_back({btn});
-
-            bot.getApi().sendMessage(
-                chatId,
-                "Пришли XML файл функционального блока:",
-                nullptr, nullptr, kb
-            );
-        }
-        else if (data == "help") {
-            TgBot::InlineKeyboardMarkup::Ptr kb(new TgBot::InlineKeyboardMarkup);
-            TgBot::InlineKeyboardButton::Ptr btn(new TgBot::InlineKeyboardButton);
-            btn->text = "Назад";
-            btn->callbackData = "back_to_main";
-            kb->inlineKeyboard.push_back({btn});
-
-            bot.getApi().sendMessage(chatId,
-                "Инструкция:\n"
-                "1. Нажмите \"Загрузить XML\"\n"
-                "2. Отправьте XML файл (.fbt)\n"
-                "3. Дождитесь генерации PNG и SVG\n\n"
-                "По вопросам: @aToTheStars",
-                nullptr, nullptr, kb
-            );
-        }
-        else if (data == "project_about") {
-            TgBot::InlineKeyboardMarkup::Ptr kb(new TgBot::InlineKeyboardMarkup);
-            TgBot::InlineKeyboardButton::Ptr btn(new TgBot::InlineKeyboardButton);
-            btn->text = "Назад";
-            btn->callbackData = "back_to_main";
-            kb->inlineKeyboard.push_back({btn});
-
-            bot.getApi().sendMessage(chatId,
-                "Бот создан в рамках курсовой работы.\n"
-                "Разработчики:\n"
-                "@aToTheStars\n"
-                "@MangoWkusnoe",
-                nullptr, nullptr, kb
-            );
-        }
-    });
-
-
-    bot.getEvents().onAnyMessage([&bot](TgBot::Message::Ptr message) {
-        if (!message->document) {
-            return;
-        }
-
-        int64_t chatId = message->chat->id;
-        std::string fileName = message->document->fileName;
-
-        std::string lower = fileName;
-        for (char& c : lower) {
-            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-        }
-
-        bool isFbt = false;
-        if (lower.size() >= 4 && lower.substr(lower.size() - 4) == ".fbt") {
-            isFbt = true;
-        }
-
-        if (isFbt) {
-            bot.getApi().sendMessage(chatId, "Обработка файла...");
-            saveXml(bot, message);
-        } else {
-            bot.getApi().sendMessage(chatId, "Неверный формат файла. Пришлите файл .fbt");
-        }
-    });
+    using std::placeholders::_1;
+    bot.getEvents().onCommand("start", std::bind(handleStartCommand, std::ref(bot), _1));
+    bot.getEvents().onCallbackQuery(std::bind(handleCallbackQuery, std::ref(bot), _1));
+    bot.getEvents().onAnyMessage(std::bind(handleAnyMessage, std::ref(bot), _1));
 
 
     std::cout << "Бот запущен..." << std::endl;

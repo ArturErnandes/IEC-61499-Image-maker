@@ -2,3 +2,4 @@ build/
 images/
 .idea/
 libfbsvg.a
+.DS_Store

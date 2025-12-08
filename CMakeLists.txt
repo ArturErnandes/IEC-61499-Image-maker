@@ -24,7 +24,7 @@ add_library(fbsvg STATIC
 )
 target_include_directories(fbsvg
     PUBLIC
-        ${CMAKE_SOURCE_DIR}/fbsvg
+        ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/pugixml
         ${CAIRO_INCLUDE_DIRS}
         ${RSVG_INCLUDE_DIRS}
@@ -46,8 +46,7 @@ add_executable(bot
 
 target_include_directories(bot
     PRIVATE
-        ${CMAKE_SOURCE_DIR}/fbsvg
-        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/include
         ${Boost_INCLUDE_DIRS}
 )
 

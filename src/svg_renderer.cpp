@@ -1,5 +1,5 @@
 // генерирует svg файл, рисует контур блока, входы, выходы, надписи и остальное оформление
-#include "svg_renderer.hpp"
+#include <fbsvg/svg_renderer.hpp>
 #include <sstream>
 #include <algorithm>
 

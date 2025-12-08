@@ -1,6 +1,6 @@
 #pragma once
-#include "fb_model.hpp"
-#include "layout.hpp"
+#include <fbsvg/fb_model.hpp>
+#include <fbsvg/layout.hpp>
 #include <string>
 
 namespace fbsvg {

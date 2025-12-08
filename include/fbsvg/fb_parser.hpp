@@ -1,5 +1,5 @@
 #pragma once
-#include "fb_model.hpp"
+#include <fbsvg/fb_model.hpp>
 #include <string>
 
 namespace pugi { class xml_document; } 

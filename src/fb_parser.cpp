@@ -1,5 +1,5 @@
 // парсит xml, возвращает  читаемую информацию с xml 
-#include "fb_parser.hpp"
+#include <fbsvg/fb_parser.hpp>
 #include "pugixml.hpp"
 #include <stdexcept>
 

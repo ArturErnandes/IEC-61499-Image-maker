@@ -1,5 +1,5 @@
 // переводит вектор в пнг
-#include "png_renderer.hpp"
+#include <fbsvg/png_renderer.hpp>
 #include <cairo.h>
 #include <librsvg/rsvg.h>
 #include <stdexcept>

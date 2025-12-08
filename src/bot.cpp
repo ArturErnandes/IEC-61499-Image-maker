@@ -1,6 +1,5 @@
 //Код бота, который принимает .fbt файлы с параметрами блока IEC-61499 и возвращает сгенерированные png и svg 
-#include <tgbot/tgbot.h>
-
+#include "bot.h"
 #include <cstdlib> 
 #include <fstream>    
 #include <cctype>   
@@ -10,9 +9,9 @@
 #include <sstream>
 #include <string_view>
 
-#include "fb_parser.hpp"
-#include "svg_renderer.hpp"
-#include "png_renderer.hpp"
+#include <fbsvg/fb_parser.hpp>
+#include <fbsvg/svg_renderer.hpp>
+#include <fbsvg/png_renderer.hpp>
 
 
 void sendMainMenu(TgBot::Bot& bot, int64_t chatId) {

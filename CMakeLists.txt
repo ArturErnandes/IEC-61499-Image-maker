@@ -4,28 +4,40 @@ project(iec61499_bot LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+include(FetchContent)
 find_package(PkgConfig REQUIRED)
-
-find_package(TgBot QUIET)
-if(NOT TgBot_FOUND)
-    pkg_check_modules(TGBOT REQUIRED tgbot)
-endif()
 
 pkg_check_modules(CAIRO REQUIRED cairo)
 pkg_check_modules(RSVG REQUIRED librsvg-2.0)
 
-find_package(Boost REQUIRED)
-
-add_library(fbsvg STATIC
-    src/fb_parser.cpp
-    src/svg_renderer.cpp
-    src/png_renderer.cpp
-    pugixml/pugixml.cpp
+set(PUGIXML_BUILD_TESTS OFF CACHE INTERNAL "")
+set(PUGIXML_BUILD_EXAMPLES OFF CACHE INTERNAL "")
+FetchContent_Declare(
+    pugixml
+    GIT_REPOSITORY https://github.com/zeux/pugixml.git
+    GIT_TAG v1.14
 )
+FetchContent_MakeAvailable(pugixml)
+
+set(BUILD_TESTS OFF CACHE INTERNAL "")
+set(BUILD_EXAMPLES OFF CACHE INTERNAL "")
+FetchContent_Declare(
+    tgbot
+    GIT_REPOSITORY https://github.com/reo7sp/tgbot-cpp.git
+    GIT_TAG v1.4.3
+)
+FetchContent_MakeAvailable(tgbot)
+
+set(FBSVG_SOURCES
+    src/fb_parser.cpp
+    src/png_renderer.cpp
+    src/svg_renderer.cpp
+)
+
+add_library(fbsvg STATIC ${FBSVG_SOURCES})
 target_include_directories(fbsvg
     PUBLIC
         ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/pugixml
         ${CAIRO_INCLUDE_DIRS}
         ${RSVG_INCLUDE_DIRS}
 )
@@ -36,25 +48,24 @@ target_link_directories(fbsvg
 )
 target_link_libraries(fbsvg
     PUBLIC
+        pugixml
         ${CAIRO_LIBRARIES}
         ${RSVG_LIBRARIES}
 )
 
-add_executable(bot
-    src/bot.cpp
-)
+add_executable(fb2svg src/fb2svg.cpp)
+target_link_libraries(fb2svg PRIVATE fbsvg)
 
-target_include_directories(bot
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/include
-        ${Boost_INCLUDE_DIRS}
-)
+add_executable(fb2png src/fb2png.cpp)
+target_link_libraries(fb2png PRIVATE fbsvg)
 
-if(TgBot_FOUND)
-    target_link_libraries(bot PRIVATE TgBot::TgBot)
+add_executable(bot src/bot.cpp)
+target_include_directories(bot PRIVATE ${CMAKE_SOURCE_DIR}/include)
+if(TARGET TgBot::TgBot)
+    set(TGBOT_TARGET TgBot::TgBot)
+elseif(TARGET TgBot)
+    set(TGBOT_TARGET TgBot)
 else()
-    target_include_directories(bot PRIVATE ${TGBOT_INCLUDE_DIRS})
-    target_link_libraries(bot PRIVATE ${TGBOT_LIBRARIES})
+    message(FATAL_ERROR "TgBot target not found after FetchContent")
 endif()
-
-target_link_libraries(bot PRIVATE fbsvg)
+target_link_libraries(bot PRIVATE fbsvg ${TGBOT_TARGET})

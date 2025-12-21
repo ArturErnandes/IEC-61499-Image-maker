@@ -1,7 +1,7 @@
 // сначала парсит файл, затем преобразует в векторы, переводит векторы в пнг и на выходе создает файл .png
-#include "fb_parser.hpp"
-#include "svg_renderer.hpp"
-#include "png_renderer.hpp"
+#include "fbsvg/fb_parser.hpp"
+#include "fbsvg/svg_renderer.hpp"
+#include "fbsvg/png_renderer.hpp"
 #include <iostream>
 
 int main(int argc, char **argv) {

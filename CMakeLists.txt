@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
 find_package(PkgConfig REQUIRED)
+find_package(Boost 1.65.1 REQUIRED)
 
 pkg_check_modules(CAIRO REQUIRED cairo)
 pkg_check_modules(RSVG REQUIRED librsvg-2.0)
@@ -61,6 +62,7 @@ target_link_libraries(fb2png PRIVATE fbsvg)
 
 add_executable(bot src/bot.cpp)
 target_include_directories(bot PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(bot PRIVATE ${Boost_INCLUDE_DIRS})
 if(TARGET TgBot::TgBot)
     set(TGBOT_TARGET TgBot::TgBot)
 elseif(TARGET TgBot)

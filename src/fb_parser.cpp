@@ -1,5 +1,5 @@
 // парсер
-#include "fb_parser.hpp"
+#include "fbsvg/fb_parser.hpp"
 #include "pugixml.hpp"
 
 using namespace fbsvg;

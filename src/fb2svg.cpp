@@ -3,8 +3,8 @@
 #include <fstream>
 #include <string>
 
-#include "fb_parser.hpp"
-#include "svg_renderer.hpp"
+#include "fbsvg/fb_parser.hpp"
+#include "fbsvg/svg_renderer.hpp"
 
 int main(int argc, char** argv){
 
